@@ -1,0 +1,124 @@
+﻿<Window x:Class="Smart_Hold.Views.SmartHoldView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Smart_Hold.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Smart_Hold"
+        xmlns:converters="clr-namespace:Smart_Hold.Converters"
+        xmlns:helpers="clr-namespace:Smart_Hold.Helpers"
+        xmlns:viewModels="clr-namespace:Smart_Hold.ViewModels"
+        mc:Ignorable="d"
+        Title="{Binding Version, Mode=OneWay, StringFormat='Smart Hold {0}'}"
+        Icon="/Smart Hold;component/Resources/Logo.ico"
+        MinHeight="193" MinWidth="634" Height="300" Width="677"
+        WindowStartupLocation="CenterScreen">
+    
+    <Window.Resources>
+        <!--Converters-->
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:NegationBooleanToVisibilityConverter x:Key="NegationBooleanToVisibilityConverter"/>
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <converters:MultiBooleanToVisibilityConverter x:Key="MultiBooleanToVisibilityConverter" />
+
+        <!--Styles-->
+        <DataTemplate DataType="{x:Type viewModels:FolderBackupViewModel}">
+            <Grid Cursor="Hand">
+                <Grid.ToolTip>
+                    <ToolTip>
+                        <TextBlock Text="{Binding TotalFiles, Mode=OneWay, StringFormat={}{0} fichiers}" />
+                    </ToolTip>
+                </Grid.ToolTip>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Checked="FolderBackupCheckedChanged" Unchecked="FolderBackupCheckedChanged"
+                              IsEnabled="{Binding DataContext.Activated, Mode=OneWay, Converter={StaticResource InverseBooleanConverter}, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}"/>
+                    <Image Width="15" Height="15" Source="/Smart Hold;component/Resources/folder_50x50.png" Margin="2,0,0,0" />
+                    <TextBlock Text="{Binding Path, Mode=OneWay}" Margin="5,0,0,0" TextTrimming="CharacterEllipsis" FontFamily="Segoe UI Light" FontSize="13.333"/>
+                </StackPanel>
+                <ProgressBar Grid.Column="1" Width="120" Maximum="{Binding TotalFiles}" IsIndeterminate="False" Margin="5,0,0,0" helpers:ProgressBarHelper.SmoothValue="{Binding ProgressValue}" Height="12">
+                    <ProgressBar.Visibility>
+                        <MultiBinding Converter="{StaticResource MultiBooleanToVisibilityConverter}">
+                            <Binding Path="DataContext.Running" Mode="OneWay" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}" />
+                            <Binding Path="Enabled" Mode="OneWay" />
+                        </MultiBinding>
+
+                    </ProgressBar.Visibility>
+                </ProgressBar>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <GroupBox Header="Dossiers à sauvegarder" FontFamily="Segoe UI Light">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ListBox Margin="5" ItemsSource="{Binding Paths}" Padding="0,0,0,20" HorizontalContentAlignment="Stretch"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsSynchronizedWithCurrentItem="True" KeyUp="ListBox_KeyUp"
+                         ScrollViewer.CanContentScroll="False" Focusable="False"/>
+                <TextBlock Grid.Row="0" Text="{Binding EnabledCount, StringFormat=Élement(s) sélectionné(s) : {0}}" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10,0,0,10" Foreground="#FF444444"/>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0" Height="30" Content="Parcourir" Margin="5,0" Command="{Binding BrowseCommand}"/>
+                    <Button Grid.Column="1" Height="30" Content="Supprimer" Margin="5,0" Command="{Binding RemoveCommand}"/>
+                </Grid>
+            </Grid>
+        </GroupBox>
+
+        <Grid Grid.Row="1" Visibility="{Binding Running, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="{Binding CurrentFile}" Margin="5" TextTrimming="CharacterEllipsis"/>
+        </Grid>
+        <Grid Grid.Row="1" Visibility="{Binding Running, Mode=OneWay, Converter={StaticResource NegationBooleanToVisibilityConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <CheckBox x:Name="CheckActivate" Content="Activer la sauvegarde intelligente" Margin="5" VerticalAlignment="Center" FontFamily="Segoe UI Light" Cursor="Hand" Command="{Binding ActivatedCommand}" />
+                <TextBlock Grid.Row="1" HorizontalAlignment="Right" Margin="5,0,0,0" VerticalAlignment="Center">
+                    <TextBlock.Resources>
+                        <Style TargetType="{x:Type Hyperlink}" BasedOn="{StaticResource {x:Type Hyperlink}}">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#FF1c97ea"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="True">
+                                    <Setter Property="Cursor" Value="Hand" />
+                                </Trigger>
+                            </Style.Triggers>
+                            <Setter Property="TextDecorations" Value="{x:Null}"/>
+                        </Style>
+                    </TextBlock.Resources>
+                    <Hyperlink Click="Hyperlink_Click">Afficher l'historique</Hyperlink>
+                </TextBlock>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="Fréquence (en heure) :" VerticalAlignment="Center" FontFamily="Segoe UI Light"/>
+                <controls:NumericUpDown x:Name="numericUpDown" Width="60" Height="20" Maximum="999" Minimum="1" Value="{Binding BackupFrequency, Mode=TwoWay}" Margin="5"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
